@@ -1,9 +1,10 @@
+using FehDialogExtractor;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace FehDialogExtractorTest
 {
@@ -20,7 +21,11 @@ namespace FehDialogExtractorTest
                 );
             samplePath = Path.GetFullPath(samplePath);
 
-            var recognized = svc.ExtractTextFromImageAzureVision(samplePath).Result;
+            var settingPath = Path.Combine(AppContext.BaseDirectory, "../../../../FehDialogExtractor", "azurevision.json");
+
+            var settings = AzureVisionSettings.LoadAzureVisionSettings(settingPath);
+
+            var recognized = svc.ExtractTextFromImageAzureVision(samplePath, settings.Endpoint, settings.ApiKey).Result;
             Console.WriteLine(recognized);
         }
 

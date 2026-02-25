@@ -15,7 +15,7 @@ using System.Linq;
 
 namespace FehDialogExtractor
 {
-    public class OcrService
+    public partial class OcrService
     {
         public string ExtractTextFromImage(string imagePath)
         {
@@ -37,6 +37,8 @@ namespace FehDialogExtractor
                 {
                     bitmapForOcr = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Gray8, BitmapAlphaMode.Ignore);
                 }
+
+        
                 catch
                 {
                     bitmapForOcr = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
@@ -58,20 +60,97 @@ namespace FehDialogExtractor
             }
         }
 
-        public async Task<string> ExtractTextFromImageAzureVision(string imagePath)
+        public async Task<string> ExtractTextFromImageAzureVision(
+            string imagePath, string azureVisionEndPoint, string azureVisionApiKey)
         {
-            var settings = LoadAzureVisionSettings();
-
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", settings.ApiKey);
+            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", azureVisionApiKey);
 
             // 1. Read API を呼び出し（非同期ジョブ）
-            var uri = $"{settings.Endpoint}vision/v3.2/read/analyze?language=ja&readingOrder=basic";
+            var uri = $"{azureVisionEndPoint}vision/v3.2/read/analyze?language=ja&readingOrder=basic";
 
             byte[] imageBytes = await File.ReadAllBytesAsync(imagePath);
             using var content = new ByteArrayContent(imageBytes);
             content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
+
+            // OCR リクエスト送信
+            var response = await client.PostAsync(uri, content);
+            response.EnsureSuccessStatusCode();
+
+            // 結果取得用の Operation-Location ヘッダ
+            var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+
+            // 2. 結果が出るまでポーリング
+            string result;
+            while (true)
+            {
+                await Task.Delay(1000);
+                var resultResponse = await client.GetAsync(operationLocation);
+                result = await resultResponse.Content.ReadAsStringAsync();
+
+                if (result.Contains("\"status\":\"succeeded\"") || result.Contains("\"status\":\"failed\""))
+                    break;
+            }
+
+            // Parse JSON and extract recognized text (lines[].text) from analyzeResult.readResults
+            try
+            {
+                using var doc = JsonDocument.Parse(result);
+                var root = doc.RootElement;
+                var sb = new StringBuilder();
+
+                if (root.TryGetProperty("analyzeResult", out var analyze) &&
+                    analyze.TryGetProperty("readResults", out var readResults) &&
+                    readResults.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var page in readResults.EnumerateArray())
+                    {
+                        if (page.TryGetProperty("lines", out var lines) && lines.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var line in lines.EnumerateArray())
+                            {
+                                if (line.TryGetProperty("text", out var textEl))
+                                {
+                                    var txt = textEl.GetString() ?? string.Empty;
+                                    if (sb.Length > 0) sb.AppendLine();
+                                    sb.Append(txt);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return sb.ToString();
+            }
+            catch (JsonException)
+            {
+                // If parsing fails, return raw result
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Extracts text from the given image stream using Azure Vision Read API.
+        /// </summary>
+        /// <param name="imageStream">Stream containing image bytes (will be read from current position).</param>
+        /// <returns>Recognized text.</returns>
+        public async Task<string> ExtractTextFromImageAzureVision(
+            Stream imageStream, string azureVisionEndPoint, string azureVisionApiKey)
+        {
+            if (imageStream == null) throw new ArgumentNullException(nameof(imageStream));
+
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", azureVisionApiKey);
+
+            // 1. Read API を呼び出し（非同期ジョブ）
+            var uri = $"{azureVisionEndPoint}vision/v3.2/read/analyze?language=ja&readingOrder=basic";
+
+            if (imageStream.CanSeek)
+                imageStream.Position = 0;
+
+            using var content = new StreamContent(imageStream);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
             // OCR リクエスト送信
             var response = await client.PostAsync(uri, content);
@@ -261,23 +340,5 @@ namespace FehDialogExtractor
             var gray = SoftwareBitmap.Convert(resized, BitmapPixelFormat.Gray8, BitmapAlphaMode.Ignore);
             return gray;
         }
-
-        // Load Azure Vision settings from JSON file located in the application base directory.
-        private AzureVisionSettings LoadAzureVisionSettings()
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, "azurevision.json");
-            if (!File.Exists(path))
-                throw new InvalidOperationException($"Azure Vision configuration file not found: {path}");
-
-            var json = File.ReadAllText(path);
-            var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            var settings = JsonSerializer.Deserialize<AzureVisionSettings>(json, opts);
-            if (settings == null || string.IsNullOrEmpty(settings.Endpoint) || string.IsNullOrEmpty(settings.ApiKey))
-                throw new InvalidOperationException($"Azure Vision configuration is invalid: {path}");
-
-            return settings;
-        }
-
-        private sealed record AzureVisionSettings(string Endpoint, string ApiKey);
     }
 }

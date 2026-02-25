@@ -1,33 +1,203 @@
-﻿<Window x:Class="FehDialogExtractor.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FehDialogExtractor"
-        mc:Ignorable="d"
-        Title="FEH Dialog Extractor" Height="600" Width="900">
-    <Grid Margin="8">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="2*" />
-            <ColumnDefinition Width="3*" />
-        </Grid.ColumnDefinitions>
+﻿<Window
+    x:Class="FehDialogExtractor.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:FehDialogExtractor"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+    xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+    Title="テキスト抽出君"
+    Width="900"
+    Height="600"
+    Background="{DynamicResource WindowBackgroundBrush}"
+    Foreground="{DynamicResource ControlForegroundBrush}"
+    PreviewKeyDown="Window_PreviewKeyDown"
+    mc:Ignorable="d">
 
-        <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Padding="4">
-            <StackPanel>
-                <Image x:Name="PreviewImage" Stretch="Uniform" Height="480" />
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,8,0,0">
-                    <Button x:Name="OpenImageButton" Width="110" Margin="0,0,8,0" Click="OpenImageButton_Click">Open Image...</Button>
-                    <Button x:Name="ExtractButton" Width="110" Margin="0,0,8,0" Click="ExtractButton_Click">Extract OCR</Button>
-                    <Button x:Name="SaveButton" Width="110" Click="SaveButton_Click">Save Text...</Button>
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="36" ResizeBorderThickness="6" />
+    </shell:WindowChrome.WindowChrome>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!--  Custom title bar  -->
+        <Border
+            x:Name="TitleBar"
+            Grid.Row="0"
+            Padding="6"
+            Background="{DynamicResource WindowBackgroundBrush}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Foreground="{DynamicResource ControlForegroundBrush}"
+                    Text="テキスト抽出君" />
+                <StackPanel
+                    Grid.Column="1"
+                    HorizontalAlignment="Right"
+                    Orientation="Horizontal">
+                    <Button
+                        x:Name="MinimizeButton"
+                        Width="36"
+                        Height="24"
+                        Margin="2"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        Content="—"
+                        Foreground="{DynamicResource ControlForegroundBrush}" />
+                    <Button
+                        x:Name="MaximizeButton"
+                        Width="36"
+                        Height="24"
+                        Margin="2"
+                        Background="{DynamicResource ControlBackgroundBrush}"
+                        Content="☐"
+                        Foreground="{DynamicResource ControlForegroundBrush}" />
+                    <Button
+                        x:Name="CloseButton"
+                        Width="36"
+                        Height="24"
+                        Margin="2"
+                        Background="Transparent"
+                        Content="✕"
+                        Foreground="{DynamicResource ControlForegroundBrush}" />
                 </StackPanel>
-            </StackPanel>
+            </Grid>
         </Border>
 
-        <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Padding="4" Margin="8,0,0,0">
-            <StackPanel>
-                <TextBlock Text="Extracted Text" FontWeight="Bold" Margin="0,0,0,8" />
-                <TextBox x:Name="ExtractedTextBox" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Height="520" />
-            </StackPanel>
-        </Border>
+        <Grid Grid.Row="1" Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="3*" />
+            </Grid.ColumnDefinitions>
+
+            <TabControl Name="OcrSettingRoot" Grid.Column="0">
+                <TabItem Header="WebページOCR">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0" Margin="0,0,0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox
+                                x:Name="UrlTextBox"
+                                Grid.Column="0"
+                                HorizontalAlignment="Stretch"
+                                VerticalAlignment="Center"
+                                KeyDown="UrlTextBox_KeyDown" />
+                            <Button
+                                x:Name="NavigateButton"
+                                Grid.Column="1"
+                                Width="60"
+                                Margin="8,0,0,0"
+                                Click="NavigateButton_Click"
+                                Content="更新" />
+                        </Grid>
+                        <Button
+                            x:Name="CaptureButton"
+                            Grid.Row="1"
+                            Width="120"
+                            Margin="0,0,0,4"
+                            HorizontalAlignment="Left"
+                            Click="CaptureButton_Click"
+                            Content="テキストを抽出" />
+                        <wv2:WebView2 x:Name="webView" Grid.Row="2" />
+                    </Grid>
+                </TabItem>
+                <TabItem Header="画像OCR">
+                    <Border
+                        Grid.Column="0"
+                        Padding="4"
+                        BorderBrush="Gray"
+                        BorderThickness="1">
+                        <StackPanel>
+                            <Image
+                                x:Name="PreviewImage"
+                                Height="480"
+                                Stretch="Uniform" />
+                            <StackPanel
+                                Margin="0,8,0,0"
+                                HorizontalAlignment="Left"
+                                Orientation="Horizontal">
+                                <Button
+                                    x:Name="OpenImageButton"
+                                    Width="110"
+                                    Margin="0,0,8,0"
+                                    Click="OpenImageButton_Click">
+                                    Open Image...
+                                </Button>
+                                <Button
+                                    x:Name="ExtractButton"
+                                    Width="110"
+                                    Margin="0,0,8,0"
+                                    Click="ExtractButton_Click">
+                                    Extract OCR
+                                </Button>
+                                <Button
+                                    x:Name="SaveButton"
+                                    Width="110"
+                                    Click="SaveButton_Click">
+                                    Save Text...
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </TabItem>
+            </TabControl>
+
+            <GridSplitter
+                Grid.Column="1"
+                Width="6"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Stretch"
+                Background="{DynamicResource BorderBrushColor}"
+                ResizeBehavior="PreviousAndNext"
+                ResizeDirection="Columns"
+                ShowsPreview="True" />
+
+            <Border
+                Name="ResultRoot"
+                Grid.Column="2"
+                Margin="8,0,0,0"
+                Padding="4"
+                BorderBrush="Gray"
+                BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock
+                        Grid.Row="0"
+                        Margin="0,0,0,8"
+                        FontWeight="Bold"
+                        Text="抽出したテキスト" />
+
+                    <TextBox
+                        x:Name="ExtractedTextBox"
+                        Grid.Row="1"
+                        VerticalAlignment="Stretch"
+                        AcceptsReturn="True"
+                        HorizontalScrollBarVisibility="Auto"
+                        TextWrapping="Wrap"
+                        VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
