@@ -7,14 +7,16 @@
     <Color x:Key="BorderColor">#FF444444</Color>
     <Color x:Key="TabItemHoverColor">#FF37373A</Color>
     <Color x:Key="TabItemSelectedColor">#FF252526</Color>
+    <Color x:Key="TabItemColor">#FF252526</Color>
 
     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="{StaticResource WindowBackgroundColor}" />
     <SolidColorBrush x:Key="ControlBackgroundBrush" Color="{StaticResource ControlBackgroundColor}" />
     <SolidColorBrush x:Key="ControlForegroundBrush" Color="{StaticResource ControlForegroundColor}" />
     <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
     <SolidColorBrush x:Key="BorderBrushColor" Color="{StaticResource BorderColor}" />
-    <SolidColorBrush x:Key="TabItemHoverBrush" Color="{StaticResource TabItemHoverColor}" />
-    <SolidColorBrush x:Key="TabItemSelectedBrush" Color="{StaticResource TabItemSelectedColor}" />
+    <SolidColorBrush x:Key="TabItemHoverBrush" Color="{StaticResource ControlBackgroundColor}" />
+    <SolidColorBrush x:Key="TabItemSelectedBrush" Color="{StaticResource ControlBackgroundColor}" />
+    <SolidColorBrush x:Key="TabItemBrush" Color="{StaticResource TabItemColor}" />
 
     <Style TargetType="Window">
         <Setter Property="Background" Value="{StaticResource WindowBackgroundBrush}" />
@@ -51,9 +53,10 @@
     </Style>
 
     <Style TargetType="TabControl">
-        <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}" />
+        <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{StaticResource ControlForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource BorderBrushColor}" />
+        <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TabControl">
@@ -85,7 +88,7 @@
     </Style>
 
     <Style TargetType="TabItem">
-        <Setter Property="Background" Value="{StaticResource ControlBackgroundBrush}" />
+        <Setter Property="Background" Value="{StaticResource TabItemBrush}" />
         <Setter Property="Foreground" Value="{StaticResource ControlForegroundBrush}" />
         <Setter Property="BorderBrush" Value="{StaticResource BorderBrushColor}" />
         <Setter Property="Padding" Value="8,4" />
@@ -99,7 +102,7 @@
                         Padding="{TemplateBinding Padding}"
                         Background="{TemplateBinding Background}"
                         BorderBrush="{TemplateBinding BorderBrush}"
-                        BorderThickness="1"
+                        BorderThickness="0"
                         CornerRadius="2">
                         <ContentPresenter
                             x:Name="Content"

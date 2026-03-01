@@ -98,13 +98,21 @@
                                 Grid.Column="0"
                                 HorizontalAlignment="Stretch"
                                 VerticalAlignment="Center"
-                                KeyDown="UrlTextBox_KeyDown" />
+                                Text="{Binding UrlText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                <TextBox.InputBindings>
+                                    <KeyBinding
+                                        Key="Enter"
+                                        Command="{Binding NavigateCommand}"
+                                        CommandParameter="{Binding ElementName=webView}" />
+                                </TextBox.InputBindings>
+                            </TextBox>
                             <Button
                                 x:Name="NavigateButton"
                                 Grid.Column="1"
                                 Width="60"
                                 Margin="8,0,0,0"
-                                Click="NavigateButton_Click"
+                                Command="{Binding NavigateCommand}"
+                                CommandParameter="{Binding ElementName=webView}"
                                 Content="更新" />
                         </Grid>
                         <Button
@@ -113,9 +121,12 @@
                             Width="120"
                             Margin="0,0,0,4"
                             HorizontalAlignment="Left"
-                            Click="CaptureButton_Click"
+                            Command="{Binding CaptureCommand}"
+                            CommandParameter="{Binding ElementName=webView}"
                             Content="テキストを抽出" />
-                        <wv2:WebView2 x:Name="webView" Grid.Row="2" />
+                        <Border Grid.Row="2" BorderThickness="1">
+                            <wv2:WebView2 x:Name="webView" />
+                        </Border>
                     </Grid>
                 </TabItem>
                 <TabItem Header="画像OCR">
@@ -128,6 +139,7 @@
                             <Image
                                 x:Name="PreviewImage"
                                 Height="480"
+                                Source="{Binding PreviewImage}"
                                 Stretch="Uniform" />
                             <StackPanel
                                 Margin="0,8,0,0"
@@ -137,20 +149,20 @@
                                     x:Name="OpenImageButton"
                                     Width="110"
                                     Margin="0,0,8,0"
-                                    Click="OpenImageButton_Click">
+                                    Command="{Binding OpenImageCommand}">
                                     Open Image...
                                 </Button>
                                 <Button
                                     x:Name="ExtractButton"
                                     Width="110"
                                     Margin="0,0,8,0"
-                                    Click="ExtractButton_Click">
+                                    Command="{Binding ExtractCommand}">
                                     Extract OCR
                                 </Button>
                                 <Button
                                     x:Name="SaveButton"
                                     Width="110"
-                                    Click="SaveButton_Click">
+                                    Command="{Binding SaveCommand}">
                                     Save Text...
                                 </Button>
                             </StackPanel>
@@ -194,6 +206,7 @@
                         VerticalAlignment="Stretch"
                         AcceptsReturn="True"
                         HorizontalScrollBarVisibility="Auto"
+                        Text="{Binding ExtractedText, Mode=TwoWay}"
                         TextWrapping="Wrap"
                         VerticalScrollBarVisibility="Auto" />
                 </Grid>
